@@ -6,13 +6,12 @@
 3) 内置示例参数，可直接运行.
 """
 
-from __future__ import annotations
-
+import argparse
 from dataclasses import dataclass
 from heapq import heappop, heappush
 from itertools import product
 from math import log
-from typing import List, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 
 @dataclass(frozen=True)
@@ -22,7 +21,7 @@ class Problem:
     reliabilities: Sequence[float]  # r_i
     costs: Sequence[float]  # c_i
     target_reliability: float  # R0
-    upper_bounds: Sequence[int] | None = None  # 每个子系统最大备件数 U_i
+    upper_bounds: Optional[Sequence[int]] = None  # 每个子系统最大备件数 U_i
 
     def __post_init__(self) -> None:
         if len(self.reliabilities) == 0:
@@ -152,7 +151,7 @@ def brute_force_optimal(problem: Problem) -> Solution:
     c = list(problem.costs)
     ub = list(problem.upper_bounds)
 
-    best_x: List[int] | None = None
+    best_x: Optional[List[int]] = None
     best_cost = float("inf")
     best_rs = 0.0
 
@@ -198,5 +197,40 @@ def demo() -> None:
     print(f"\n成本差距 greedy-optimal = {gap}")
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="贪心备件分配求解器")
+    parser.add_argument(
+        "--mode",
+        choices=["demo", "greedy", "bruteforce"],
+        default="demo",
+        help="运行模式: demo(默认), greedy(仅贪心), bruteforce(仅穷举)",
+    )
+    parser.add_argument(
+        "--naive",
+        action="store_true",
+        help="greedy 模式下改为朴素扫描（默认是堆优化）",
+    )
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    problem = Problem(
+        reliabilities=[0.90, 0.85, 0.80, 0.95],
+        costs=[5, 4, 3, 8],
+        target_reliability=0.95,
+        upper_bounds=[7, 7, 7, 7],
+    )
+
+    if args.mode == "demo":
+        demo()
+    elif args.mode == "greedy":
+        sol = greedy_allocate(problem, use_heap=not args.naive)
+        print(sol)
+    else:
+        sol = brute_force_optimal(problem)
+        print(sol)
+
+
 if __name__ == "__main__":
-    demo()
+    main()
